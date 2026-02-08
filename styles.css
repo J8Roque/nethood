@@ -1,339 +1,111 @@
-/* styles.css */
-/* Premium simple UI, dark by default, works on GitHub Pages */
+// content.js
+window.APP_CONTENT = {
+  brand: {
+    name: "Change Risk Autopilot",
+    tagline: "Change management that learns from outages",
+    owner: "J Roque"
+  },
 
-:root {
-  --bg: #0b1020;
-  --panel: rgba(255,255,255,0.06);
-  --panel2: rgba(255,255,255,0.09);
-  --text: rgba(255,255,255,0.92);
-  --muted: rgba(255,255,255,0.64);
-  --border: rgba(255,255,255,0.12);
-  --shadow: 0 18px 50px rgba(0,0,0,0.35);
-  --ring: rgba(140,170,255,0.55);
-  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-  --radius: 16px;
-}
+  nav: [
+    { id: "dashboard", label: "Dashboard" },
+    { id: "new_change", label: "New Change" },
+    { id: "changes", label: "Changes" },
+    { id: "incidents", label: "Incidents" },
+    { id: "about", label: "About" }
+  ],
 
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  font-family: var(--sans);
-  color: var(--text);
-  background:
-    radial-gradient(900px 600px at 20% 10%, rgba(80,140,255,0.22), transparent 60%),
-    radial-gradient(700px 500px at 80% 15%, rgba(120,255,210,0.14), transparent 55%),
-    radial-gradient(900px 700px at 30% 90%, rgba(255,120,190,0.10), transparent 60%),
-    var(--bg);
-}
+  lookups: {
+    changeTypes: ["patch", "config", "release", "network", "dns", "access", "maintenance", "other"],
+    customerImpact: ["none", "low", "medium", "high"],
+    status: ["draft", "submitted", "in_review", "approved", "rejected", "scheduled", "implemented", "post_review", "closed"]
+  },
 
-a { color: inherit; }
+  riskRules: [
+    { code: "TIER3_SYSTEM", points: 25, message: "Tier 3 system included" },
+    { code: "HIGH_IMPACT", points: 20, message: "Customer impact is high" },
+    { code: "NO_ROLLBACK", points: 15, message: "Rollback plan is too short" },
+    { code: "NO_TEST", points: 15, message: "Test plan is too short" },
+    { code: "SHORT_NOTICE", points: 10, message: "Planned start is within 24 hours" },
+    { code: "LONG_DURATION", points: 8, message: "Planned duration is longer than 2 hours" }
+  ],
 
-#app { min-height: 100%; }
+  demoData: {
+    systems: [
+      { id: 1, name: "Core DNS", tier: 3, desc: "Internal and external DNS hosting" },
+      { id: 2, name: "VPN Gateway", tier: 3, desc: "Remote access VPN" },
+      { id: 3, name: "Customer Portal", tier: 2, desc: "Public web portal" },
+      { id: 4, name: "File Share", tier: 1, desc: "Internal SMB file services" }
+    ],
 
-/* Topbar */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(10,14,28,0.72);
-  backdrop-filter: blur(10px);
-}
+    incidents: [
+      {
+        id: 101,
+        title: "Customer portal outage after release",
+        severity: 2,
+        startedAt: daysAgoISO(21),
+        resolvedAt: daysAgoISO(21, 0.75),
+        systems: [3],
+        notes: "Rollback restored service. Root cause was a bad config in deployment."
+      },
+      {
+        id: 102,
+        title: "VPN authentication failures",
+        severity: 1,
+        startedAt: daysAgoISO(45),
+        resolvedAt: daysAgoISO(45, 2),
+        systems: [2],
+        notes: "Expired cert. Renewed cert and restarted service."
+      }
+    ],
 
-.brand { display: flex; align-items: center; gap: 12px; }
-.brand-mark {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  background: linear-gradient(135deg, rgba(120,160,255,0.85), rgba(120,255,210,0.65));
-  color: rgba(10,14,28,0.95);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
-}
-.brand-name { font-weight: 800; }
-.brand-tagline { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    changes: [
+      {
+        id: 201,
+        title: "Patch VPN gateway OpenSSL",
+        changeType: "patch",
+        requester: "E. Engineer",
+        plannedStart: daysFromNowISO(2),
+        plannedEnd: daysFromNowISO(2, 1.5),
+        customerImpact: "medium",
+        status: "submitted",
+        systems: [2],
+        rollbackPlan: "Rollback: restore snapshot, reinstall previous package, restart VPN services, validate login.",
+        testPlan: "Test: validate VPN login from test account, check logs, run smoke test from two networks.",
+        steps: "1) Notify 2) Snapshot 3) Patch 4) Restart 5) Validate 6) Monitor"
+      },
+      {
+        id: 202,
+        title: "DNS record cleanup for legacy app",
+        changeType: "dns",
+        requester: "J Roque",
+        plannedStart: daysFromNowISO(0.25),
+        plannedEnd: daysFromNowISO(0.25, 0.5),
+        customerImpact: "high",
+        status: "in_review",
+        systems: [1],
+        rollbackPlan: "Rollback: revert DNS records to previous values and flush caches.",
+        testPlan: "Test: nslookup internal and external, confirm app reachability.",
+        steps: "1) Export zone 2) Update records 3) Validate 4) Monitor 30 min"
+      }
+    ],
 
-.topbar-actions { display: flex; gap: 10px; }
+    demo: {
+      isActive: false,
+      stepIndex: 0,
+      startedAt: null,
+      runCount: 0
+    }
+  }
+};
 
-/* Layout */
-.layout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  min-height: calc(100vh - 68px);
-}
-
-.sidebar {
-  padding: 16px;
-  border-right: 1px solid var(--border);
-  background: rgba(255,255,255,0.03);
-}
-
-.nav { display: grid; gap: 10px; }
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  text-align: left;
-  padding: 12px 12px;
-  border-radius: 14px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text);
-  cursor: pointer;
-}
-.nav-item:hover { background: rgba(255,255,255,0.05); border-color: var(--border); }
-.nav-item.active {
-  background: rgba(120,160,255,0.14);
-  border-color: rgba(120,160,255,0.30);
-}
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.30);
-}
-.nav-item.active .dot {
-  background: rgba(120,160,255,0.9);
+function daysFromNowISO(days, hours = 0) {
+  const d = new Date();
+  d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000 + hours * 60 * 60 * 1000);
+  return d.toISOString().slice(0, 16);
 }
 
-.sidebar-foot { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
-
-.main { padding: 18px; }
-.main-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.breadcrumbs { font-weight: 700; }
-.main-actions { display: flex; gap: 10px; }
-
-/* Cards */
-.card {
-  border: 1px solid var(--border);
-  background: var(--panel);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-.card.subtle {
-  margin-top: 14px;
-  background: rgba(255,255,255,0.04);
-  box-shadow: none;
-}
-.card.mini {
-  background: rgba(255,255,255,0.05);
-  box-shadow: none;
-}
-.card-head {
-  padding: 14px 14px 12px 14px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  border-bottom: 1px solid var(--border);
-}
-.content { display: grid; gap: 14px; }
-
-.grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-.grid-2 {
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 14px;
-}
-
-.kpi { padding: 14px; }
-.kpi-value { font-size: 28px; font-weight: 900; margin-top: 6px; }
-
-.title { font-weight: 900; font-size: 16px; }
-.muted { color: var(--muted); }
-.small { font-size: 12px; }
-.strong { font-weight: 800; }
-.mono { font-family: var(--mono); }
-
-/* Buttons */
-.btn {
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.08);
-  color: var(--text);
-  padding: 10px 12px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-weight: 700;
-}
-.btn:hover { background: rgba(255,255,255,0.11); }
-.btn:focus { outline: none; box-shadow: 0 0 0 3px var(--ring); }
-.btn.ghost {
-  background: transparent;
-}
-.iconbtn {
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,0.06);
-  color: var(--text);
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-/* Tables */
-.table-wrap { overflow: auto; }
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.table th, .table td {
-  padding: 12px 12px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
-.table th {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  background: rgba(255,255,255,0.03);
-}
-.rowlink { cursor: pointer; }
-.rowlink:hover { background: rgba(255,255,255,0.04); }
-
-/* Pills */
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,0.05);
-}
-.pill.risk.low { border-color: rgba(120,255,210,0.35); background: rgba(120,255,210,0.10); }
-.pill.risk.medium { border-color: rgba(255,210,120,0.35); background: rgba(255,210,120,0.10); }
-.pill.risk.high { border-color: rgba(255,120,120,0.35); background: rgba(255,120,120,0.10); }
-.pill.risk.critical { border-color: rgba(255,90,210,0.40); background: rgba(255,90,210,0.12); }
-.pill.status { background: rgba(120,160,255,0.10); border-color: rgba(120,160,255,0.30); }
-
-/* Forms */
-.form { padding: 14px; display: grid; gap: 12px; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 700; }
-input, select, textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(10,14,28,0.55);
-  color: var(--text);
-}
-textarea { resize: vertical; }
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--ring);
-}
-
-.form-actions { display: flex; gap: 10px; }
-
-.chips { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
-.chip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.05);
-  padding: 10px 12px;
-  border-radius: 14px;
-  cursor: pointer;
-}
-.chip input { width: auto; }
-
-.list {
-  list-style: none;
-  padding: 12px 14px 14px 14px;
-  margin: 0;
-  display: grid;
-  gap: 10px;
-}
-.list li { padding: 10px 10px; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); }
-
-/* Modal */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  z-index: 50;
-}
-.modal {
-  width: min(980px, 100%);
-  border-radius: 18px;
-  border: 1px solid var(--border);
-  background: rgba(10,14,28,0.95);
-  box-shadow: 0 25px 70px rgba(0,0,0,0.55);
-  overflow: hidden;
-}
-.modal-head {
-  padding: 14px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid var(--border);
-}
-.modal-body { padding: 14px; display: grid; gap: 12px; }
-.modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding-top: 6px; }
-
-.risk-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.split { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 12px; }
-
-.block { margin-top: 10px; }
-.label { font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 4px; }
-
-.prose { padding: 14px; }
-.actions-row { padding: 0 14px 14px 14px; }
-
-/* Toast */
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%) translateY(10px);
-  opacity: 0;
-  transition: all 0.2s ease;
-  border: 1px solid var(--border);
-  background: rgba(10,14,28,0.90);
-  padding: 10px 12px;
-  border-radius: 999px;
-  box-shadow: var(--shadow);
-  z-index: 60;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-/* Responsive */
-@media (max-width: 980px) {
-  .layout { grid-template-columns: 1fr; }
-  .sidebar { border-right: none; border-bottom: 1px solid var(--border); }
-  .grid-3 { grid-template-columns: 1fr; }
-  .grid-2 { grid-template-columns: 1fr; }
-  .form-row { grid-template-columns: 1fr; }
-  .chips { grid-template-columns: 1fr; }
-  .split { grid-template-columns: 1fr; }
+function daysAgoISO(days, hours = 0) {
+  const d = new Date();
+  d.setTime(d.getTime() - days * 24 * 60 * 60 * 1000 + hours * 60 * 60 * 1000);
+  return d.toISOString().slice(0, 16);
 }
