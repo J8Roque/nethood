@@ -111,6 +111,10 @@ function navigate(view) {
   $("#mainActions").innerHTML = mainActions(view);
   $("#view").innerHTML = renderView(view);
   wireView(view);
+
+  if (state.data?.demo?.isActive && view === "dashboard") {
+    bindDemoControls();
+  }
 }
 
 function highlightNav(view) {
@@ -125,15 +129,9 @@ function viewLabel(view) {
 }
 
 function mainActions(view) {
-  if (view === "changes") {
-    return `<button class="btn" id="btnNewChange">New change</button>`;
-  }
-  if (view === "dashboard") {
-    return `<button class="btn" id="btnNewChange">New change</button>`;
-  }
-  if (view === "incidents") {
-    return `<span class="badge">Incident learning enabled</span>`;
-  }
+  if (view === "changes") return `<button class="btn" id="btnNewChange">New change</button>`;
+  if (view === "dashboard") return `<button class="btn" id="btnNewChange">New change</button>`;
+  if (view === "incidents") return `<span class="badge">Incident learning enabled</span>`;
   return "";
 }
 
@@ -150,8 +148,7 @@ function wireView(view) {
   }
 
   if (view === "dashboard") {
-    const list = $("#riskList");
-    list.addEventListener("click", (e) => {
+    $("#riskList").addEventListener("click", (e) => {
       const row = e.target.closest("[data-id]");
       if (!row) return;
       openChangeModal(Number(row.dataset.id));
@@ -187,7 +184,7 @@ function renderDashboard() {
 
   const kpis = {
     total: changes.length,
-    high: scored.filter(x => ["high", "critical"].includes(x.risk.level)).length,
+    high: scored.filter(x => ["high","critical"].includes(x.risk.level)).length,
     upcoming24: scored.filter(x => hoursUntil(x.plannedStart) <= 24 && hoursUntil(x.plannedStart) >= 0).length
   };
 
@@ -428,7 +425,7 @@ function renderChanges() {
       <div class="card-head">
         <div>
           <div class="title">Portfolio note</div>
-          <div class="muted">This GitHub Pages demo stores data in your browser. The SQL folder shows the real backend design.</div>
+          <div class="muted">This GitHub Pages demo stores data in your browser. The SQL folder shows the backend design.</div>
         </div>
       </div>
     </div>
@@ -493,7 +490,7 @@ function renderAbout() {
       <div style="padding:14px">
         <p class="muted">Problem: outages repeat because changes are approved without learning from incident history.</p>
         <p class="muted">Solution: risk scoring with clear reasons reviewers can act on.</p>
-        <p class="muted">Upgrade path: connect a real API to the SQL schema in the <span class="mono">sql/</span> folder.</p>
+        <p class="muted">Upgrade path: connect a real API to the SQL schema in the <span class="mono">sql</span> folder.</p>
       </div>
 
       <div style="padding:0 14px 14px 14px; display:flex; gap:10px; flex-wrap:wrap">
@@ -524,14 +521,8 @@ function onCreateChange(e) {
     steps: String(fd.get("steps") || "").trim()
   };
 
-  if (!change.title || !change.plannedStart || !change.plannedEnd) {
-    toast("Please complete required fields.");
-    return;
-  }
-  if (systems.length === 0) {
-    toast("Pick at least one system impacted.");
-    return;
-  }
+  if (!change.title || !change.plannedStart || !change.plannedEnd) { toast("Complete required fields."); return; }
+  if (systems.length === 0) { toast("Pick at least one system impacted."); return; }
 
   state.data.changes.unshift(change);
   saveData(state.data);
@@ -606,10 +597,7 @@ function openChangeModal(changeId) {
 
   document.body.appendChild(modal);
 
-  const close = () => {
-    modal.remove();
-    clearHighlights();
-  };
+  const close = () => { modal.remove(); clearHighlights(); };
 
   modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
   modal.querySelector("#closeModal").addEventListener("click", close);
@@ -617,12 +605,8 @@ function openChangeModal(changeId) {
 
   modal.querySelector("#copySummary").addEventListener("click", async () => {
     const summary = buildSummary(change, risk);
-    try {
-      await navigator.clipboard.writeText(summary);
-      toast("Summary copied.");
-    } catch {
-      toast("Clipboard blocked by browser.");
-    }
+    try { await navigator.clipboard.writeText(summary); toast("Summary copied."); }
+    catch { toast("Clipboard blocked."); }
   });
 }
 
@@ -649,38 +633,30 @@ function scoreChange(change, systems) {
   const reasons = [];
   const sys = (change.systems || []).map(id => systems.find(s => s.id === id)).filter(Boolean);
 
-  const hasTier3 = sys.some(s => s.tier === 3);
-  if (hasTier3) add("TIER3_SYSTEM");
-
+  if (sys.some(s => s.tier === 3)) add("TIER3_SYSTEM");
   if (change.customerImpact === "high") add("HIGH_IMPACT");
-
   if ((change.rollbackPlan || "").trim().length < 40) add("NO_ROLLBACK");
   if ((change.testPlan || "").trim().length < 40) add("NO_TEST");
 
   const until = hoursUntil(change.plannedStart);
   if (until >= 0 && until <= 24) add("SHORT_NOTICE");
 
-  const durHours = (new Date(change.plannedEnd) - new Date(change.plannedStart)) / (1000 * 60 * 60);
+  const durHours = (new Date(change.plannedEnd) - new Date(change.plannedStart)) / (1000*60*60);
   if (durHours > 2) add("LONG_DURATION");
 
   const total = reasons.reduce((sum, r) => sum + r.points, 0);
-  const level =
-    total >= 50 ? "critical" :
-    total >= 30 ? "high" :
-    total >= 15 ? "medium" : "low";
-
+  const level = total >= 50 ? "critical" : total >= 30 ? "high" : total >= 15 ? "medium" : "low";
   return { total, level, reasons };
 
   function add(code) {
     const r = rules.find(x => x.code === code);
-    if (!r) return;
-    reasons.push({ code: r.code, points: r.points, message: r.message });
+    if (r) reasons.push({ code: r.code, points: r.points, message: r.message });
   }
 }
 
 function hoursUntil(iso) {
   const dt = new Date(iso);
-  return (dt - new Date()) / (1000 * 60 * 60);
+  return (dt - new Date()) / (1000*60*60);
 }
 
 function kpi(label, value) {
@@ -692,14 +668,8 @@ function kpi(label, value) {
   `;
 }
 
-function riskPill(level, score) {
-  return `<span class="pill risk ${level}">${escapeHtml(level)} • ${score}</span>`;
-}
-
-function statusPill(status) {
-  return `<span class="pill status">${escapeHtml(status)}</span>`;
-}
-
+function riskPill(level, score) { return `<span class="pill risk ${escapeHtml(level)}">${escapeHtml(level)} • ${score}</span>`; }
+function statusPill(status) { return `<span class="pill status">${escapeHtml(status)}</span>`; }
 function sevPill(sev) {
   const map = { 1: "critical", 2: "high", 3: "medium", 4: "low" };
   const label = map[sev] || "low";
@@ -707,9 +677,7 @@ function sevPill(sev) {
 }
 
 function systemsLabel(ids) {
-  const names = (ids || [])
-    .map(id => state.data.systems.find(s => s.id === id)?.name)
-    .filter(Boolean);
+  const names = (ids || []).map(id => state.data.systems.find(s => s.id === id)?.name).filter(Boolean);
   return names.join(", ") || "No systems";
 }
 
@@ -758,10 +726,7 @@ function download(filename, content, mime) {
   URL.revokeObjectURL(url);
 }
 
-/* =========================
-   Demo mode (built in)
-========================= */
-
+/* Demo mode */
 function demoSteps() {
   return [
     { key: "intro", text: "We will walk through a risky DNS change and why it is flagged." },
@@ -818,35 +783,20 @@ function bindDemoControls() {
 
 async function demoGoToStep(stepIndex) {
   clearHighlights();
-
   const steps = demoSteps();
   const s = steps[clamp(stepIndex, 0, steps.length - 1)];
 
-  if (s.key === "intro") {
-    highlight("#demoBanner");
-    toast("Demo started.");
-    return;
-  }
+  if (s.key === "intro") { highlight("#demoBanner"); toast("Demo started."); return; }
 
   if (s.key === "queue") {
     highlight("#demoQueue");
     const top = getTopRiskChangeId();
-    if (top) {
-      await sleep(350);
-      openChangeModal(top);
-    }
+    if (top) { await sleep(350); openChangeModal(top); }
     return;
   }
 
-  if (s.key === "modal") {
-    highlight(".modal");
-    return;
-  }
-
-  if (s.key === "reasons") {
-    highlight("#demoReasons");
-    return;
-  }
+  if (s.key === "modal") { highlight(".modal"); return; }
+  if (s.key === "reasons") { highlight("#demoReasons"); return; }
 
   if (s.key === "rules") {
     closeAnyModal();
@@ -861,6 +811,7 @@ async function demoGoToStep(stepIndex) {
     await sleep(150);
     navigate("new_change");
     await sleep(80);
+
     const form = $("#changeForm");
     if (form) {
       form.title.value = "Firewall rule change without test plan";
@@ -870,14 +821,13 @@ async function demoGoToStep(stepIndex) {
       const end = new Date(start.getTime() + 3.5 * 60 * 60 * 1000);
       form.plannedStart.value = toLocalInputValue(start);
       form.plannedEnd.value = toLocalInputValue(end);
-      // select tier 3 system
       const cb = form.querySelector('input[name="systems"][value="2"]');
       if (cb) cb.checked = true;
       form.rollbackPlan.value = "Rollback: revert rule.";
       form.testPlan.value = "Test: ok.";
       form.steps.value = "1) Apply rule 2) Monitor";
       highlight("#changeForm");
-      toast("Now save this change to see it score high.");
+      toast("Save this change to see it score high.");
     }
     return;
   }
@@ -900,9 +850,7 @@ function stopDemoIfRunning() {
   clearHighlights();
 }
 
-function stopDemoHighlightsOnly() {
-  clearHighlights();
-}
+function stopDemoHighlightsOnly() { clearHighlights(); }
 
 function getTopRiskChangeId() {
   const { changes, systems } = state.data;
