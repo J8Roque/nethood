@@ -1,6 +1,4 @@
 // content.js
-// Text + seed data for the GitHub Pages demo (in-browser only)
-
 window.APP_CONTENT = {
   brand: {
     name: "Change Risk Autopilot",
@@ -22,7 +20,6 @@ window.APP_CONTENT = {
     status: ["draft", "submitted", "in_review", "approved", "rejected", "scheduled", "implemented", "post_review", "closed"]
   },
 
-  // Simple transparent risk rules for the web demo
   riskRules: [
     { code: "TIER3_SYSTEM", points: 25, message: "Tier 3 system included" },
     { code: "HIGH_IMPACT", points: 20, message: "Customer impact is high" },
@@ -90,11 +87,17 @@ window.APP_CONTENT = {
         testPlan: "Test: nslookup internal and external, confirm app reachability.",
         steps: "1) Export zone 2) Update records 3) Validate 4) Monitor 30 min"
       }
-    ]
+    ],
+
+    demo: {
+      isActive: false,
+      stepIndex: 0,
+      startedAt: null,
+      runCount: 0
+    }
   }
 };
 
-// Helpers for timestamps
 function daysFromNowISO(days, hours = 0) {
   const d = new Date();
   d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000 + hours * 60 * 60 * 1000);
